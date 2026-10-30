@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AgentMarket AI — M2M Protocol Canvas</title>
+
+  <!-- AG Grid Community Library -->
+  <script src="https://cdn.jsdelivr.net/npm/ag-grid-community/dist/ag-grid-community.min.js"></script>
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+    :root {
+      /* Warm Anthropic Beige / Cream Palette */
+      --bg-cream: #F4F1EA;
+      --dot-color: #D3CDC0;
+      --panel-bg: rgba(248, 246, 240, 0.92);
+      --card-bg: #EAE5DC;
+      --card-inner: #FFFFFF;
+      --border-subtle: #D8D1C2;
+      --border-focus: #B8AF9E;
+      
+      --accent-warm: #C25E00; /* Terracotta Accent */
+      --text-primary: #1F1E1B;
+      --text-secondary: #57534E;
+      --text-muted: #78716C;
+      
+      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: var(--font-sans);
+      background-color: var(--bg-cream);
+      /* Warm Dot Matrix Canvas Background */
+      background-image: radial-gradient(var(--dot-color) 1.5px, transparent 1.5px);
+      background-size: 24px 24px;
+      color: var(--text-primary);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* 16:9 Editorial Widescreen Canvas */
+    .viewport-wrapper {
+      width: 100%;
+      max-width: 1280px;
+      aspect-ratio: 16 / 9;
+      background-color: var(--panel-bg);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      box-shadow: 0 20px 48px rgba(0, 0, 0, 0.08);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      position: relative;
+      transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    /* Dynamic Mobile Mode Switch */
+    .viewport-wrapper.mobile-mode {
+      max-width: 420px;
+      aspect-ratio: 9 / 18;
+      height: 780px;
+      border-radius: 28px;
+    }
+
+    /* Header Bar */
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 24px;
+      background-color: rgba(244, 241, 234, 0.95);
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .hamburger-btn {
+      background: none;
+      border: none;
+      color: var(--text-secondary);
+      font-size: 18px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      transition: color 0.2s ease;
+    }
+
+    .hamburger-btn:hover { color: var(--text-primary); }
+
+    .brand-badge {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--accent-warm);
+      background-color: rgba(194, 94, 0, 0.08);
+      border: 1px solid rgba(194, 94, 0, 0.2);
+      padding: 3px 8px;
+      border-radius: 4px;
+      letter-spacing: 0.5px;
+    }
+
+    .protocol-name {
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: -0.2px;
+      color: var(--text-primary);
+    }
+
+    .view-toggle-btn {
+      background-color: var(--card-inner);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-secondary);
+      padding: 6px 14px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .view-toggle-btn:hover {
+      border-color: var(--border-focus);
+      color: var(--text-primary);
+    }
+
+    /* Canvas Grid Layout */
+    .canvas-body {
+      display: grid;
+      grid-template-columns: 1fr 1.25fr;
+      gap: 24px;
+      padding: 24px;
+      flex: 1;
+      overflow-y: auto;
+    }
+
+    .mobile-mode .canvas-body {
+      grid-template-columns: 1fr;
+    }
+
+    .panel {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .section-title {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 10px;
+    }
+
+    /* Minimalist Agent Cards */
+    .agents-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+    }
+
+    .agent-card {
+      background-color: var(--card-inner);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      padding: 14px 8px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
+    }
+
+    .agent-card:hover {
+      border-color: var(--border-focus);
+      transform: translateY(-2px);
+    }
+
+    .agent-avatar {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background-color: var(--card-bg);
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 600;
+      border: 1px solid var(--border-subtle);
+    }
+
+    .agent-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-secondary);
+    }
+
+    /* Prompt Input Wrapper with Randomize Button */
+    .prompt-input-wrapper {
+      display: flex;
+      gap: 8px;
+    }
+
+    .prompt-box {
+      flex: 1;
+      background-color: var(--card-inner);
+      border: 1px solid var(--border-subtle);
+      border-radius: 6px;
+      color: var(--text-primary);
+      padding: 10px 14px;
+      font-family: var(--font-sans);
+      font-size: 13px;
+      outline: none;
+      transition: border-color 0.2s ease;
+    }
+
+    .prompt-box:focus {
+      border-color: var(--border-focus);
+    }
+
+    button.btn-randomize {
+      background-color: var(--card-bg);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-primary);
+      padding: 10px 14px;
+      font-size: 12px;
+      font-weight: 600;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+    }
+
+    button.btn-randomize:hover {
+      border-color: var(--border-focus);
+      background-color: #E2DDD3;
+    }
+
+    /* Minimal Action Buttons */
+    .action-btn-group {
+      display: flex;
+      gap: 10px;
+    }
+
+    button.btn-minimal {
+      flex: 1;
+      background-color: var(--card-inner);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-primary);
+      padding: 12px 14px;
+      font-size: 12px;
+      font-weight: 600;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+    }
+
+    button.btn-minimal:hover {
+      border-color: var(--border-focus);
+      background-color: #FFFFFF;
+    }
+
+    button.btn-primary {
+      background-color: var(--text-primary);
+      color: var(--bg-cream);
+      border: 1px solid var(--text-primary);
+    }
+
+    button.btn-primary:hover {
+      background-color: #383632;
+      border-color: #383632;
+    }
+
+    /* Minimalist Telemetry Inspector */
+    .telemetry-card {
+      background-color: var(--card-inner);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
+    }
+
+    .telemetry-header {
+      display: flex;
+      justify-content: space-between;
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--text-muted);
+      letter-spacing: 0.5px;
+    }
+
+    .console-box {
+      background-color: #FAF8F5;
+      border: 1px solid var(--border-subtle);
+      padding: 10px;
+      border-radius: 6px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-primary);
+      height: 80px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+    }
+
+    /* AG Grid Container */
+    .grid-container {
+      height: 220px;
+      width: 100%;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid var(--border-subtle);
+    }
+
+    /* Drawer Navigation */
+    .drawer-overlay {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: rgba(31, 30, 27, 0.4);
+      z-index: 100;
+      display: none;
+    }
+
+    .drawer {
+      position: absolute;
+      top: 0; left: -300px; bottom: 0;
+      width: 280px;
+      background-color: var(--bg-cream);
+      border-right: 1px solid var(--border-subtle);
+      z-index: 101;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      transition: left 0.3s ease;
+    }
+
+    .drawer.active { left: 0; }
+    .drawer-overlay.active { display: block; }
+
+    .drawer-item {
+      padding: 10px 12px;
+      border-radius: 6px;
+      background-color: var(--card-inner);
+      border: 1px solid var(--border-subtle);
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      transition: all 0.2s ease;
+    }
+
+    .drawer-item:hover {
+      color: var(--text-primary);
+      border-color: var(--border-focus);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 16:9 Widescreen Framework Container -->
+  <div class="viewport-wrapper" id="viewport">
+
+    <!-- Top Minimal Navigation -->
+    <header>
+      <div class="header-left">
+        <button class="hamburger-btn" onclick="toggleDrawer(true)">☰</button>
+        <span class="brand-badge">PAYPAL M2M</span>
+        <span class="protocol-name">AgentMarket AI Protocol</span>
+      </div>
+
+      <button class="view-toggle-btn" id="toggle-view-btn" onclick="toggleViewMode()">
+        Mobile View
+      </button>
+    </header>
+
+    <!-- Main Canvas Layout -->
+    <div class="canvas-body">
+
+      <!-- Left Control Panel -->
+      <div class="panel">
+        <div>
+          <div class="section-title">Network AI Agents</div>
+          <div class="agents-grid">
+            <div class="agent-card" onclick="executeContract('Apex-1', 'ScrapeBot-9')">
+              <div class="agent-avatar">A1</div>
+              <span class="agent-label">Apex-1</span>
+            </div>
+
+            <div class="agent-card" onclick="executeContract('ScrapeBot-9', 'Apex-1')">
+              <div class="agent-avatar">SB</div>
+              <span class="agent-label">ScrapeBot</span>
+            </div>
+
+            <div class="agent-card" onclick="executeContract('DataNinja-X', 'FastAgent-3')">
+              <div class="agent-avatar">DN</div>
+              <span class="agent-label">DataNinja</span>
+            </div>
+
+            <div class="agent-card" onclick="executeContract('FastAgent-3', 'Apex-1')">
+              <div class="agent-avatar">FA</div>
+              <span class="agent-label">FastAgent</span>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="section-title">Task Specification Input</div>
+          <div class="prompt-input-wrapper">
+            <input id="custom-task" class="prompt-box" type="text" value="Extract real-time sentiment analysis from social feeds" placeholder="Type custom SLA prompt..." />
+            <button class="btn-randomize" onclick="randomizePromptInput()">🎲 Randomize</button>
+          </div>
+        </div>
+
+        <div>
+          <div class="section-title">Autonomous Protocol Handshake</div>
+          <div class="action-btn-group">
+            <button class="btn-minimal btn-primary" onclick="executeContract()">⚡ Hold SLA Escrow</button>
+            <button class="btn-minimal" onclick="runRFPAuction()">🏆 RFP Bidding</button>
+            <button class="btn-minimal" onclick="auditAndCapture()">🎯 QA Release</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Telemetry Panel -->
+      <div class="panel">
+        <div class="telemetry-card">
+          <div class="telemetry-header">
+            <span>GEMINI REASONING TELEMETRY</span>
+            <span id="ai-status" style="color: var(--accent-warm);">STANDBY</span>
+          </div>
+          <div>
+            <div style="font-family: var(--font-mono); font-size: 10px; color: var(--text-muted); margin-bottom: 4px;">SLA Prompt Context:</div>
+            <div id="prompt-console" class="console-box">Awaiting protocol action...</div>
+          </div>
+          <div>
+            <div style="font-family: var(--font-mono); font-size: 10px; color: var(--text-muted); margin-bottom: 4px;">Structured Output (JSON):</div>
+            <div id="response-console" class="console-box" style="color: #059669;">{ "status": "idle" }</div>
+          </div>
+        </div>
+
+        <div>
+          <div class="section-title">Transaction Ledger Passbook</div>
+          <div id="myGrid" class="ag-theme-alpine grid-container"></div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Drawer Navigation -->
+    <div class="drawer-overlay" id="drawer-overlay" onclick="toggleDrawer(false)"></div>
+    <div class="drawer" id="drawer">
+      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-subtle); padding-bottom: 12px;">
+        <span style="font-family: var(--font-mono); font-size: 12px; color: var(--text-primary);">Developer Features</span>
+        <button style="background: none; border: none; color: var(--text-muted); font-size: 16px; cursor: pointer;" onclick="toggleDrawer(false)">✕</button>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 8px;">
+        <div class="drawer-item" onclick="verifyLedger(); toggleDrawer(false);">
+          Verify Cryptographic Ledger
+        </div>
+        <div class="drawer-item" onclick="runRFPAuction(); toggleDrawer(false);">
+          Trigger Multi-Agent RFP
+        </div>
+        <div class="drawer-item" onclick="auditAndCapture(); toggleDrawer(false);">
+          QA Payload Release
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
